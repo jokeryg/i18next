@@ -732,7 +732,8 @@ var Translator = function (_EventEmitter) {
     res = this.interpolator.interpolate(res, data, options.lng || this.language);
 
     // nesting
-    if (options.nest !== false) res = this.interpolator.nest(res, function () {
+    if (options.nest !== false)
+     res = this.interpolator.nest(res, function () {
       return _this2.translate.apply(_this2, arguments);
     }, options);
 
@@ -1137,6 +1138,9 @@ var Interpolator = function () {
     this.nestingPrefix = iOpts.nestingPrefix ? regexEscape(iOpts.nestingPrefix) : iOpts.nestingPrefixEscaped || regexEscape('$t(');
     this.nestingSuffix = iOpts.nestingSuffix ? regexEscape(iOpts.nestingSuffix) : iOpts.nestingSuffixEscaped || regexEscape(')');
 
+    this.childrenPrefix = iOpts.childrenPrefix ? regexEscape(iOpts.childrenPrefix) : regexEscape('$c(');
+    this.childrenSuffix = iOpts.childrenSuffix ? regexEscape(iOpts.childrenSuffix) :  regexEscape(')');
+    
     this.maxReplaces = iOpts.maxReplaces ? iOpts.maxReplaces : 1000;
 
     // the regexp
@@ -1157,6 +1161,9 @@ var Interpolator = function () {
 
     var nestingRegexpStr = this.nestingPrefix + '(.+?)' + this.nestingSuffix;
     this.nestingRegexp = new RegExp(nestingRegexpStr, 'g');
+
+    var childrenRegexpStr = this.childrenPrefix + '(.+?)' + this.childrenSuffix;
+    this.childrenRegexp = new RegExp(childrenRegexpStr, 'g');
   };
 
   Interpolator.prototype.interpolate = function interpolate(str, data, lng) {
@@ -1261,6 +1268,17 @@ var Interpolator = function () {
       str = str.replace(match[0], value);
       this.regexp.lastIndex = 0;
     }
+
+
+    // regular escape on demand
+    while (match = this.childrenRegexp.exec(str)) {
+      var selectAttr = match[0].replace(this.childrenPrefix,"").replace(this.childrenSuffix,"");
+      value = $("[data-i18n='"+selectAttr+"']").prop("outerHTML");
+      str = str.replace(match[0], value);
+      this.regexp.lastIndex = 0;
+    }
+
+
     return str;
   };
 
@@ -1649,6 +1667,8 @@ function get$1() {
 
       nestingPrefix: '$t(',
       nestingSuffix: ')',
+      childrenPrefix:'$c(',
+      childrenSuffix:')',
       // nestingPrefixEscaped: '$t(',
       // nestingSuffixEscaped: ')',
       // defaultVariables: undefined // object that can have values to interpolate on - extends passed in interpolation data
